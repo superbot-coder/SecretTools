@@ -26,8 +26,10 @@
     procedure ReInit(const CRCType: TCRCType; const ASharSet: AnsiString); inline;
     function UInt64ToChars(const Value: UInt64): AnsiString; inline;
     function CharsToUint64(const Value: AnsiString): Uint64; inline;
-    function EncodeXor(const ValueA, ValueB: Uint32): Uint32; overload; inline;
-    function EncodeXor(const SrcValue, KeyValue: AnsiString): String; overload; inline;
+    function EncodeXor(const SourceValue: String; KeyValue: Uint32): String; overload; inline;
+    function EncodeXor(const SourceValue, KeyValue: String): String; overload; inline;
+    function DecodeXor(const HexString, KeyString: String): AnsiString; overload; inline;
+    function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; inline;
     function CRCFile(const FileName: String): Uint32; inline;
   end;
 ```
@@ -88,7 +90,10 @@ CRC32 S1 + S2: 2820161786
 
 **CharsToUint64** - Функция обратная функции **UInt64ToChars** конвертирует строку из Chars в Uint64 (Cardinal)
 
-**EncodeXor** - Две перегруженные Функции одна для чисел другая для строк, функции выполняют простою операцию XOR простая 
+**EncodeXor** - Две перегруженные Функции суть которых в том строку последовательно пропускают через операцию **XOR**  в одном случае через другую строку, которая будет выступать в роли ключа во втором случае через число Uint32  которое тоже выступает в роли ключа. Порядок **XOR** - rаждый байт строки циклично на каждый байт ключа.
+
+**DecodeXor** - Две перегруженные функции, которые являются обратными 
+функциям  **EncodeXor**
 
 **CRCFile** - функция для подсчета контрольной суммы файлов
 
@@ -107,12 +112,25 @@ CRC32 S1 + S2: 2820161786
   SE.CharSet := SE.ShuffleString(Chars);
   show('CRC to ShuffleString Chars: ' + SE.CRCStringToChars(S1 + S2));
 ```
-
-Результат: 
+#### Результат: 
 ```
 CRC to Chars: AJWA30N 
 CRC to ShuffleString Chars: CMOC9WZ
 ```
+
+### Пример **EncodeXor** и  **DecodeXor**
+```pascal
+  var SE := TSecretTools.Crete(CRC_32, '');
+  // Кодируем строку
+  var S := Se.EncodeXor('Hello World!', 'MyCode');
+  // вывод закоддируванной и раскодированой строки
+  show(S + ' = ' + Se.DecodeXor(S, 'MyCode'));
+```
+результат:
+```
+517C757576394E766B757D38 = Hello World!
+```
+
 #### Telegram channel: https://t.me/delphi_solutions
 #### Telegram chat: https://t.me/delphi_solutions_chat
 #### Telegram video: https://t.me/delphi_solutions_video
