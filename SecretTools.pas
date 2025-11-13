@@ -1,4 +1,4 @@
-unit SecretTools;
+﻿unit SecretTools;
 
 interface
 
@@ -8,7 +8,7 @@ USES
 
 Type
 
-  TSecretTool = record
+  TSecretTools = record
   private
     FCRC: TCRCDef;
     FCharSet: AnsiString;
@@ -26,14 +26,16 @@ Type
     procedure ReInit(const CRCType: TCRCType; const ASharSet: AnsiString); inline;
     function UInt64ToChars(const Value: UInt64): AnsiString; inline;
     function CharsToUint64(const Value: AnsiString): Uint64; inline;
-    function EncodeXor(const ValueA, ValueB: Uint32): Uint32; overload; inline;
-    function EncodeXor(const SrcValue, KeyValue: AnsiString): String; overload; inline;
+    function EncodeXor(const SourceValue: String; KeyValue: Uint32): String; overload; inline;
+    function EncodeXor(const SourceValue, KeyValue: String): String; overload; inline;
+    function DecodeXor(const HexString, KeyString: String): AnsiString; overload; inline;
+    function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; inline;
     function CRCFile(const FileName: String): Uint32; inline;
   end;
 
 implementation
 
-function TSecretTool.CharsToUint64(const Value: AnsiString): Uint64;
+function TSecretTools.CharsToUint64(const Value: AnsiString): Uint64;
 var
   sl: integer;
   i, n: integer;
@@ -61,7 +63,7 @@ begin
   Result := Trunc(ResEx);
 end;
 
-function TSecretTool.CRCFile(const FileName: String): Uint32;
+function TSecretTools.CRCFile(const FileName: String): Uint32;
 begin
   Result := 0;
   if FileName <> '' then
@@ -75,7 +77,7 @@ begin
   end;
 end;
 
-function TSecretTool.CRCString(const Value: String; const Done: Boolean): Uint32;
+function TSecretTools.CRCString(const Value: String; const Done: Boolean): Uint32;
 begin
   FBytesBuf := BytesOf(AnsiString(Value));
   Result := CRCCode(FCRC, FBytesBuf[0], Length(FBytesBuf));
@@ -83,12 +85,12 @@ begin
     CRCDone(FCRC);
 end;
 
-function TSecretTool.CRCStringToChars(const Value: String): AnsiString;
+function TSecretTools.CRCStringToChars(const Value: String): AnsiString;
 begin
   Result := UInt64ToChars(CRCString(Value, True));
 end;
 
-function TSecretTool.CRCUint(const Value: Uint32; const Done: Boolean): Uint32;
+function TSecretTools.CRCUint(const Value: Uint32; const Done: Boolean): Uint32;
 begin
   FBytesBuf := BytesOf(Pointer(@Value), 4);
   Result := CRCCode(FCRC, FBytesBuf[0], 4);
@@ -96,52 +98,113 @@ begin
     CRCDone(FCRC);
 end;
 
-function TSecretTool.CRCUintToChars(const Value: Uint32): AnsiString;
+function TSecretTools.CRCUintToChars(const Value: Uint32): AnsiString;
 begin
   Result := UInt64ToChars(CRCUint(Value, True));
 end;
 
-constructor TSecretTool.Crete(const CRCType: TCRCType; const ACharSet: AnsiString);
+constructor TSecretTools.Crete(const CRCType: TCRCType; const ACharSet: AnsiString);
 begin
   FCharSet :=  ACharSet;
   CRCInit(FCRC, CRCType);
   SetCharSet(ACharSet);
 end;
 
-function TSecretTool.EncodeXor(const SrcValue,
-  KeyValue: AnsiString): String;
+function TSecretTools.DecodeXor(const HexString, KeyString: String): AnsiString;
 var
-  Len: Uint32;
-  i,j: Uint32;
-  b: byte;
+  SourceBuf, KeyBuf: TBytes;
+  L: integer;
+  bt: Byte;
 begin
-  if (Length(SrcValue) <> 0) and (Length(KeyValue) <> 0) then
+  Result := '';
+  L := length(HexString);
+  if (L = 0) or ((L mod 2) <> 0) then
+    exit;
+
+  KeyBuf := BytesOf(KeyString);
+  SetLength(SourceBuf, L div 2);
+  HexToBin(PChar(HexString), SourceBuf, L div 2);
+
+  for var i := 0 to High(SourceBuf) do
   begin
-    for i := 0 to Pred(Length(SrcValue)) do
+    bt := SourceBuf[i];
+    for var j := high(KeyBuf) downto 0 do
+      bt := bt xor KeyBuf[j];
+    Result := Result + Char(Bt);
+  end;
+end;
+
+function TSecretTools.DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString;
+var
+  SourceBuf, KeyBuf: TBytes;
+  L: integer;
+  bt: Byte;
+begin
+  Result := '';
+  L := length(HexString);
+  if (L = 0) or ((L mod 2) <> 0) then
+    exit;
+
+  KeyBuf := BytesOf(Pointer(@KeyValue), 4);
+  SetLength(SourceBuf, L div 2);
+  HexToBin(PChar(HexString), SourceBuf, L div 2);
+
+  for var i := 0 to High(SourceBuf) do
+  begin
+    bt := SourceBuf[i];
+    for var j := high(KeyBuf) downto 0 do
+      bt := bt xor KeyBuf[j];
+    Result := Result + Char(Bt);
+  end;
+end;
+
+function TSecretTools.EncodeXor(const SourceValue, KeyValue: String): String;
+var
+  bt: byte;
+  SourceBuf, KeyBuf: TBytes;
+begin
+  if (Length(SourceValue) <> 0) and (Length(KeyValue) <> 0) then
+  begin
+    SourceBuf := BytesOf(SourceValue);
+    KeyBuf    := BytesOf(KeyValue);
+    for var i := 0 to High(SourceBuf) do
     begin
-      b := Byte(SrcValue[i]);
-      for j := 1 to Length(KeyValue) do
-      begin
-        b := b xor Byte(KeyValue[j]);
-      end;
-      Result := Result + b.ToHexString;
+      bt := SourceBuf[i];
+      for var j := 0 to High(KeyBuf) do
+        bt := bt xor KeyBuf[j];
+      Result := Result + bt.ToHexString;
     end;
   end;
 end;
 
-function TSecretTool.EncodeXor(const ValueA, ValueB: Uint32): Uint32;
+function TSecretTools.EncodeXor(const SourceValue: String; KeyValue: Uint32): String;
+var
+  SourceBuf: TBytes;
+  KeyBuf: TBytes;
+  bt: Byte;
 begin
-  Result := ValueA xor ValueB;
+  if Length(SourceValue) <> 0 then
+  begin
+    SourceBuf := BytesOf(SourceValue);
+    KeyBuf := BytesOf(Pointer(@KeyValue), SizeOf(KeyValue));
+    for var i := 0 to High(SourceBuf) do
+    begin
+      bt := SourceBuf[i];
+      for var j := 0 to High(KeyBuf) do
+        bt := bt xor KeyBuf[j];
+      Result := Result + bt.ToHexString;
+    end;
+  end;
 end;
 
-procedure TSecretTool.ReInit(const CRCType: TCRCType; const ASharSet: AnsiString);
+procedure TSecretTools.ReInit(const CRCType: TCRCType; const ASharSet: AnsiString);
 begin
   CRCDone(FCRC);
   CRCInit(FCRC, CRCType);
   SetCharSet(ASharSet);
 end;
 
-procedure TSecretTool.SetCharSet(const ACharSet: AnsiString);
+procedure TSecretTools.SetCharSet(const ACharSet: AnsiString);
 begin
   if Length(ACharSet) > High(Byte) then
     raise Exception.Create('Error: length ASharSet > 256 byte');
@@ -149,7 +212,7 @@ begin
   FCharLen := Length(FCharSet);
 end;
 
-function TSecretTool.ShuffleString(const Input: string): string;
+function TSecretTools.ShuffleString(const Input: string): string;
 var
   CharArray: TArray<Char>;
   i, j: Integer;
@@ -173,7 +236,7 @@ begin
   Result := String.Create(CharArray);
 end;
 
-function TSecretTool.UInt64ToChars(const Value: UInt64): AnsiString;
+function TSecretTools.UInt64ToChars(const Value: UInt64): AnsiString;
 var
   sale, N, D: UInt64;
 begin
