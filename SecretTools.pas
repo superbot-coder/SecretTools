@@ -18,7 +18,7 @@ Type
   public
     constructor Crete(const CRCType: TCRCType; const ACharSet: AnsiString);
     property CharSet: AnsiString read FCharSet write SetCharSet;
-    function ShuffleString(const Input: string): string; inline;
+    function CRCFile(const FileName: String): Uint32; inline;
     function CRCUint(const Value: Uint32; const Done: Boolean = true): Uint32; inline;
     function CRCUintToChars(const Value: Uint32): AnsiString; inline;
     function CRCString(const Value: String; const Done: Boolean = true): Uint32; inline;
@@ -26,11 +26,11 @@ Type
     procedure ReInit(const CRCType: TCRCType; const ASharSet: AnsiString); inline;
     function UInt64ToChars(const Value: UInt64): AnsiString; inline;
     function CharsToUint64(const Value: AnsiString): Uint64; inline;
-    function EncodeXor(const SourceValue: String; KeyValue: Uint32): String; overload; inline;
-    function EncodeXor(const SourceValue, KeyValue: String): String; overload; inline;
-    function DecodeXor(const HexString, KeyString: String): AnsiString; overload; inline;
-    function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; inline;
-    function CRCFile(const FileName: String): Uint32; inline;
+    class function ShuffleString(const Input: string): string; static; inline;
+    class function EncodeXor(const SourceValue: String; KeyValue: Uint32): String; overload; static; inline;
+    class function EncodeXor(const SourceValue, KeyValue: String): String; overload; static; inline;
+    class function DecodeXor(const HexString, KeyString: String): AnsiString; overload; static; inline;
+    class function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; static; inline;
   end;
 
 implementation
@@ -110,7 +110,7 @@ begin
   SetCharSet(ACharSet);
 end;
 
-function TSecretTools.DecodeXor(const HexString, KeyString: String): AnsiString;
+class function TSecretTools.DecodeXor(const HexString, KeyString: String): AnsiString;
 var
   SourceBuf, KeyBuf: TBytes;
   L: integer;
@@ -134,7 +134,7 @@ begin
   end;
 end;
 
-function TSecretTools.DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString;
+class function TSecretTools.DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString;
 var
   SourceBuf, KeyBuf: TBytes;
   L: integer;
@@ -158,7 +158,7 @@ begin
   end;
 end;
 
-function TSecretTools.EncodeXor(const SourceValue, KeyValue: String): String;
+class function TSecretTools.EncodeXor(const SourceValue, KeyValue: String): String;
 var
   bt: byte;
   SourceBuf, KeyBuf: TBytes;
@@ -177,7 +177,7 @@ begin
   end;
 end;
 
-function TSecretTools.EncodeXor(const SourceValue: String; KeyValue: Uint32): String;
+class function TSecretTools.EncodeXor(const SourceValue: String; KeyValue: Uint32): String;
 var
   SourceBuf: TBytes;
   KeyBuf: TBytes;
@@ -212,7 +212,7 @@ begin
   FCharLen := Length(FCharSet);
 end;
 
-function TSecretTools.ShuffleString(const Input: string): string;
+class function TSecretTools.ShuffleString(const Input: string): string;
 var
   CharArray: TArray<Char>;
   i, j: Integer;
