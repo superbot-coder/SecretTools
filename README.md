@@ -8,7 +8,7 @@
 ### Описание методов
 
 ```pascal
-  TSecretTools = record
+    TSecretTools = record
   private
     FCRC: TCRCDef;
     FCharSet: AnsiString;
@@ -18,7 +18,7 @@
   public
     constructor Crete(const CRCType: TCRCType; const ACharSet: AnsiString);
     property CharSet: AnsiString read FCharSet write SetCharSet;
-    function ShuffleString(const Input: string): string; inline;
+    function CRCFile(const FileName: String): Uint32; inline;
     function CRCUint(const Value: Uint32; const Done: Boolean = true): Uint32; inline;
     function CRCUintToChars(const Value: Uint32): AnsiString; inline;
     function CRCString(const Value: String; const Done: Boolean = true): Uint32; inline;
@@ -26,13 +26,13 @@
     procedure ReInit(const CRCType: TCRCType; const ASharSet: AnsiString); inline;
     function UInt64ToChars(const Value: UInt64): AnsiString; inline;
     function CharsToUint64(const Value: AnsiString): Uint64; inline;
-    function EncodeXor(const SourceValue: String; KeyValue: Uint32): String; overload; inline;
-    function EncodeXor(const SourceValue, KeyValue: String): String; overload; inline;
-    function DecodeXor(const HexString, KeyString: String): AnsiString; overload; inline;
-    function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; inline;
-    function CRCFile(const FileName: String): Uint32; inline;
+    class function ShuffleString(const Input: string): string; static; inline;
+    class function EncodeXor(const SourceValue: String; KeyValue: Uint32): String; overload; static; inline;
+    class function EncodeXor(const SourceValue, KeyValue: String): String; overload; static; inline;
+    class function DecodeXor(const HexString, KeyString: String): AnsiString; overload; static; inline;
+    class function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; static; inline;
   end;
-```
+```  
 
 Параметр const **Done**: Boolean который встречается в функциях означает финализацию  расчет контрольной суммы. 
 Параметр имеет значение по умолчанию "True" для вычисления одной операции или блока данных,  если же нужно вычислить контрольную сумму в потоке данных, например, нескольких строк идущих строка за строкой, то этот параметр необходимо перевести в состояние "false".
