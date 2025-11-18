@@ -31,6 +31,8 @@ Type
     class function EncodeXor(const SourceValue, KeyValue: String): String; overload; static; inline;
     class function DecodeXor(const HexString, KeyString: String): AnsiString; overload; static; inline;
     class function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; static; inline;
+    class function EncodeScrambler(const StrValue: String; const Count: UInt64): string; static; inline;
+    class function DecodeScrambler(const StrValue: String; const Count: UInt64): string; static; inline;
   end;
 
 implementation
@@ -134,6 +136,65 @@ begin
   end;
 end;
 
+class function TSecretTools.DecodeScrambler(const StrValue: String;
+  const Count: UInt64): string;
+var
+  SrcLen: integer;
+  SrcStr, DestStr: string;
+  LastChar: Char;
+  NotEven: Boolean;
+begin
+
+  SrcLen := Length(StrValue);
+
+  if (SrcLen > 2) and (Count > 0) then
+  begin
+
+    NotEven := SrcLen mod 2 <> 0;
+    SrcStr := StrValue;
+
+    for var c := Count downto 1 do
+    begin
+      var share1 := '';
+      var share2 := '';
+      DestStr := '';
+
+      if NotEven then
+        if c mod 2 <> 0 then
+        begin
+          LastChar := SrcStr[1];
+          Delete(SrcStr, 1, 1);
+        end
+        else
+        begin
+          LastChar := SrcStr[SrcLen];
+          Delete(SrcStr, SrcLen, 1);
+        end;
+
+        for var i := 1 to Length(SrcStr) do
+        begin
+          if i mod 2 <> 0 then
+            share1 := share1 + SrcStr[i]
+          else
+            share2 := share2 + SrcStr[i];
+        end;
+
+        if c mod 2 <> 0 then
+           DestStr := share2 + share1
+         else
+           DestStr := share1 + share2;
+        if NotEven then
+          DestStr := DestStr + LastChar;
+
+        SrcStr := DestStr;
+
+    end; // end for
+    Result := DestStr;
+  end
+  else
+    Result := StrValue;
+end;
+
 class function TSecretTools.DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString;
 var
   SourceBuf, KeyBuf: TBytes;
@@ -144,11 +205,9 @@ begin
   L := length(HexString);
   if (L = 0) or ((L mod 2) <> 0) then
     exit;
-
   KeyBuf := BytesOf(Pointer(@KeyValue), 4);
   SetLength(SourceBuf, L div 2);
   HexToBin(PChar(HexString), SourceBuf, L div 2);
-
   for var i := 0 to High(SourceBuf) do
   begin
     bt := SourceBuf[i];
@@ -156,6 +215,44 @@ begin
       bt := bt xor KeyBuf[j];
     Result := Result + Char(Bt);
   end;
+end;
+
+class function TSecretTools.EncodeScrambler(const StrValue: String;
+  const Count: UInt64): string;
+var
+  SrcStr, DestStr: string;
+  Half, SrcLen: integer;
+  NotEven: Boolean;
+begin
+  SrcLen  := length(StrValue);
+  if (SrcLen > 2) and (Count > 0) then
+  begin
+    NotEven := SrcLen mod 2 <> 0;
+    Half    := SrcLen div 2;
+    SrcStr  := StrValue;
+    for var c := 1 to Count do
+    begin
+      DestStr := '';
+      for var i := 1 to Half do
+      begin
+        if c mod 2 <> 0 then
+          DestStr :=  DestStr + SrcStr[i + Half] +SrcStr[i]
+        else
+          DestStr :=  DestStr + SrcStr[i] + SrcStr[i + Half];
+      end;
+      if NotEven then
+        if (c mod 2) <> 0 then
+          // перемещение нечетного последнего символа в начало строки
+          DestStr := SrcStr[SrcLen] + DestStr
+        else
+          // перемещение нечетного последнего символа в конец строки
+          DestStr := DestStr + SrcStr[SrcLen];
+      SrcStr  := DestStr;
+    end;
+    Result := DestStr;
+  end
+  else
+    Result := StrValue;
 end;
 
 class function TSecretTools.EncodeXor(const SourceValue, KeyValue: String): String;

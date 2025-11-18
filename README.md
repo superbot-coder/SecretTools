@@ -8,7 +8,7 @@
 ### Описание методов
 
 ```pascal
-    TSecretTools = record
+  TSecretTools = record
   private
     FCRC: TCRCDef;
     FCharSet: AnsiString;
@@ -31,6 +31,8 @@
     class function EncodeXor(const SourceValue, KeyValue: String): String; overload; static; inline;
     class function DecodeXor(const HexString, KeyString: String): AnsiString; overload; static; inline;
     class function DecodeXor(const HexString: String; const KeyValue: Uint32): AnsiString; overload; static; inline;
+    class function EncodeScrambler(const StrValue: String; const Count: UInt64): string; static; inline;
+    class function DecodeScrambler(const StrValue: String; const Count: UInt64): string; static; inline;
   end;
 ```  
 
@@ -97,6 +99,10 @@ CRC32 S1 + S2: 2820161786
 
 **CRCFile** - функция для подсчета контрольной суммы файлов
 
+**EncodeScrambler**  - Функция для простейшего шифрования строки, точнее смешивания без изменения ее размера, параметр **Count** - это количество итераций, что повышает степень смешивания и в тоже время является ключом.
+
+**DecodeScrambler** - Функция для раскодирования строки, что бы правильно раскодировать строку значения параметра **Count** должны быть такими же как и при кодировании см. пример ниже 
+    
 ### Еще один пример:
 
 ```pascal
@@ -120,15 +126,34 @@ CRC to ShuffleString Chars: CMOC9WZ
 
 ### Пример **EncodeXor** и  **DecodeXor**
 ```pascal
-  var SE := TSecretTools.Crete(CRC_32, '');
   // Кодируем строку
-  var S := Se.EncodeXor('Hello World!', 'MyCode');
+  var S := TSecretTools.EncodeXor('Hello World!', 'MyCode');
   // вывод закоддируванной и раскодированой строки
-  show(S + ' = ' + Se.DecodeXor(S, 'MyCode'));
+  show(S + ' = ' + TSecretTools.DecodeXor(S, 'MyCode'));
 ```
-результат:
+#### результат:
 ```
 517C757576394E766B757D38 = Hello World!
+```
+
+### Пример **EncodeScrambler** / **DecodeScrambler** :
+```pascal
+  var SecStr: String := 'Разработчик тестирует миниатюрную символьную диффузионную модель (всего 11M параметров), основанную на переработанной версии nanochat GPT. Вместо классического авторегрессионного декодирования используется диффузионный подход, а обучается модель на датасете Tiny Shakespeare.';
+  SecStr := TSecretTools.EncodeScrambler(SecStr, 100);
+  memo.Lines.Add('encode string:');
+  memo.Lines.Add(SecStr);
+  memo.Lines.Add('');
+  SecStr := TSecretTools.DecodeScrambler(SecStr, 100);
+  memo.Lines.Add('decode string:');
+  memo.Lines.Add(SecStr);
+```
+#### Результат:
+```text
+encode string:
+вииисоесиiдтеынвеиооkвтоюоч сог ик рьд.айсмтб олотя лотрдир сTьопаеврsг нт pобаoяте  юrут  соиaмстсийдин nнaл усроаозyлюсaбномнрфкап у о злаекзвюкTnрhaуо1ьуРосдP аау,ачнтее. ндомдьнуонSс фиеа ефGяода,   аcе tн1нмуант  фреавнсhе)игeспиeеиеернВ(рнроMочедниnеуозвтсхпо аамиатюeг
+
+decode string:
+Разработчик тестирует миниатюрную символьную диффузионную модель (всего 11M параметров), основанную на переработанной версии nanochat GPT. Вместо классического авторегрессионного декодирования используется диффузионный подход, а обучается модель на датасете Tiny Shakespeare
 ```
 
 #### Telegram channel: https://t.me/delphi_solutions
