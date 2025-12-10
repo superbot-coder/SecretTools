@@ -23,7 +23,7 @@ Type
     function CRCUintToChars(const Value: Uint32): AnsiString; inline;
     function CRCString(const Value: String; const Done: Boolean = true): Uint32; inline;
     function CRCStringToChars(const Value: String): AnsiString; inline;
-    procedure ReInit(const CRCType: TCRCType; const ASharSet: AnsiString); inline;
+    procedure ReInit(const CRCType: TCRCType; const ACharSet: AnsiString); inline;
     function UInt64ToChars(const Value: UInt64): AnsiString; inline;
     function CharsToUint64(const Value: AnsiString): Uint64; inline;
     class function ShuffleString(const Input: string): string; static; inline;
@@ -147,7 +147,13 @@ begin
 
   SrcLen := Length(StrValue);
 
-  if (SrcLen > 2) and (Count > 0) then
+  if SrcLen = 1 then
+  begin
+    Result := StrValue;
+    Exit;
+  end;
+
+  if (SrcLen > 1) and (Count > 0) then
   begin
 
     NotEven := SrcLen mod 2 <> 0;
@@ -224,8 +230,18 @@ var
   Half, SrcLen: integer;
   NotEven: Boolean;
 begin
-  SrcLen  := length(StrValue);
-  if (SrcLen > 2) and (Count > 0) then
+  SrcLen := length(StrValue);
+  result := '';
+
+  if SrcLen = 1 then
+  begin
+    Result := StrValue;
+    Exit;
+  end;
+
+  //if SrcLen  then
+
+  if (SrcLen > 1) and (Count > 0) then
   begin
     NotEven := SrcLen mod 2 <> 0;
     Half    := SrcLen div 2;
@@ -294,17 +310,17 @@ begin
   end;
 end;
 
-procedure TSecretTools.ReInit(const CRCType: TCRCType; const ASharSet: AnsiString);
+procedure TSecretTools.ReInit(const CRCType: TCRCType; const ACharSet: AnsiString);
 begin
   CRCDone(FCRC);
   CRCInit(FCRC, CRCType);
-  SetCharSet(ASharSet);
+  SetCharSet(ACharSet);
 end;
 
 procedure TSecretTools.SetCharSet(const ACharSet: AnsiString);
 begin
   if Length(ACharSet) > High(Byte) then
-    raise Exception.Create('Error: length ASharSet > 256 byte');
+    raise Exception.Create('Error: length ACharSet > 256 byte');
   FCharSet := ACharSet;
   FCharLen := Length(FCharSet);
 end;
